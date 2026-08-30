@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Oracle AI 2.5.4 | Prestige HQ</title>
+    <title>Core Node | Prestige HQ</title>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
     <meta name="theme-color" content="#0a0b10">
     <style>
@@ -368,12 +368,51 @@ body.light-theme {
         @media (max-width: 767px) {
             .desktop-only-setting { display: none !important; }
         }
+        /* Эффекты при наведении на ячейки календаря */
+#calendar-days-grid .chat-card {
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+#calendar-days-grid .chat-card:hover {
+    background: var(--surface-variant) !important;
+    border-color: var(--primary) !important;
+    transform: translateY(-2px);
+}
+
+/* Выделение сегодняшней даты */
+.calendar-day-today {
+    background: var(--primary-container) !important;
+    color: var(--primary) !important;
+    font-weight: bold;
+    border: 1px solid var(--primary) !important;
+}
+
 </style>
 </head>
 <body>
 
 <div class="oracle-container">
+<main id="screen-calendar" class="app-screen">
+    <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
+        <span id="calendar-month-title">Календарь Напоминаний</span>
+        <div style="display: flex; gap: 4px;">
+            <button onclick="changeMonth(-1)" class="icon-btn"><span class="material-symbols-rounded">chevron_left</span></button>
+            <button onclick="changeMonth(1)" class="icon-btn"><span class="material-symbols-rounded">chevron_right</span></button>
+        </div>
+    </div>
 
+    <!-- Сетка дней недели -->
+    <div style="display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-weight: bold; font-size: 12px; color: var(--primary); margin-bottom: 8px;">
+        <div>Пн</div><div>Вт</div><div>Ср</div><div>Чт</div><div>Пт</div><div>Сб</div><div>Вс</div>
+    </div>
+
+    <!-- Сетка дней месяца -->
+    <div id="calendar-days-grid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 20px;"></div>
+
+    <div class="section-title">Активные Напоминания ИИ</div>
+    <div id="reminders-list" class="chat-flow-box"></div>
+</main>
     <button id="burger-menu-btn" onclick="toggleSidebar()">
         <span class="material-symbols-rounded">menu</span>
     </button>
@@ -385,11 +424,14 @@ body.light-theme {
                 <span class="material-symbols-rounded">close</span>
             </button>
         </div>
-        <div style="display: flex; gap: 8px; margin-bottom: 15px;">
-            <button onclick="createNewChatSession()" style="flex: 1; background: var(--primary-container); color: var(--primary); border: none; border-radius: 10px; padding: 10px; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
-                <span class="material-symbols-rounded" style="font-size: 16px;">add</span> Новый чат
-            </button>
-        </div>
+        <div style="display: flex; gap: 8px; margin-bottom: 15px; flex-direction: column;">
+    <button onclick="createNewChatSession()" style="width: 100%; background: var(--primary-container); color: var(--primary); border: none; border-radius: 10px; padding: 10px; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+        <span class="material-symbols-rounded" style="font-size: 16px;">add</span> Новый чат
+    </button>
+    <button onclick="switchScreen('calendar')" style="width: 100%; background: var(--surface); border: 1px solid var(--border); color: var(--on-surface); border-radius: 10px; padding: 10px; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+        <span class="material-symbols-rounded" style="font-size: 16px; color: var(--primary);">calendar_month</span> Календарь ИИ
+    </button>
+</div>
         <div style="margin-bottom: 15px;">
             <input type="text" id="chat-search-input" placeholder="Поиск по чатам..." oninput="filterChats(this.value)" style="width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px; color: var(--on-surface); font-size: 12px; outline: none; box-sizing: border-box;">
         </div>
@@ -530,12 +572,6 @@ body.light-theme {
                 <button class="nav-item" id="btn-sec-security" onclick="showSection('security')">
                     <span class="material-symbols-rounded">lock</span> Защита
                 </button>
-                <button class="nav-item" id="btn-sec-archive" onclick="checkAccessArchive()">
-                    <span class="material-symbols-rounded">folder_delete</span> Секретный Архив
-                </button>
-                <button class="nav-item" onclick="toggleLayoutWidth()">
-                    <span class="material-symbols-rounded">aspect_ratio</span> Растянуть
-                </button>
                 <button class="nav-item" id="btn-sec-about" onclick="showSection('about')">
                     <span class="material-symbols-rounded">info</span> О проекте
                 </button>
@@ -567,7 +603,7 @@ body.light-theme {
                         </div>
                         <div class="chat-card" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                             <span style="font-weight: 600;">Переключить Тему</span>
-                            <button onclick="document.body.classList.toggle('light-theme')" style="padding: 8px 16px; border-radius: 8px; border:none; background: var(--primary-container); color: var(--primary); cursor: pointer;">ПЕРЕКЛЮЧИТЬ</button>
+                            <button id="light-theme-toggle-btn" onclick="toggleLightTheme()" style="padding: 8px 16px; border-radius: 8px; border:none; background: var(--primary-container); color: var(--primary); cursor: pointer;">ПЕРЕКЛЮЧИТЬ</button>
                         </div>
 
                         <div class="chat-card" style="margin-bottom: 15px;">
@@ -666,14 +702,6 @@ body.light-theme {
                     </div>
                 </div>
 
-                <div id="section-archive" class="setting-section" style="display:none;">
-                    <h3 style="margin-top: 0; font-size: 14px; color: #ff5252;">Секретный Архив</h3>
-                    <div class="chat-card">
-                        <span style="display: block; margin-bottom: 15px;">Доступ разрешен. Здесь лежат удаленные логи Ядра.</span>
-                        <button onclick="lockArchive()" style="padding: 8px 16px; border-radius: 8px; border:none; background: var(--surface); color: var(--on-surface); cursor: pointer; width: 100%; border: 1px solid var(--border);">ЗАБЛОКИРОВАТЬ СНОВА</button>
-                    </div>
-                </div>
-
                 <div id="section-about" class="setting-section" style="display:none;">
                     <h3 style="margin-top: 0; font-size: 14px; color: var(--on-surface-variant);">Информация о системе</h3>
                     <div class="chat-card" style="text-align: center; padding: 24px;">
@@ -731,7 +759,7 @@ body.light-theme {
         <div id="custom-modal-title" style="font-size: 16px; font-weight: bold; color: var(--on-surface); margin-bottom: 8px;">Системное сообщение</div>
         <div id="custom-modal-text" style="font-size: 13px; color: var(--on-surface-variant); margin-bottom: 20px;">Текст сообщения...</div>
         <div id="custom-modal-input-container" style="margin-bottom: 20px; display: none;">
-            <input type="password" id="custom-modal-input" placeholder="Введите пароль..." style="width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px; color: var(--on-surface); font-size: 14px; outline: none; box-sizing: border-box;">
+            <input type="text" id="custom-modal-input" placeholder="Введите пароль..." style="width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px; color: var(--on-surface); font-size: 14px; outline: none; box-sizing: border-box;">
         </div>
         <div style="display: flex; gap: 8px; justify-content: center;">
             <button id="custom-modal-cancel" onclick="closeCustomModal(false)" style="flex: 1; background: var(--surface-variant); color: var(--on-surface); border: none; border-radius: 10px; padding: 10px; font-size: 12px; font-weight: bold; cursor: pointer; display: none;">Отмена</button>
@@ -760,6 +788,8 @@ body.light-theme {
     };
     let currentContextNode = null;
     let modalCallback = null;
+    let currentCalDate = new Date();
+    let reminders = JSON.parse(localStorage.getItem('oracle_reminders') || '[]');
 
     // =========================================
     // 2. NAVIGATION & SIDEBAR
@@ -774,7 +804,6 @@ body.light-theme {
         if (targetScreen) targetScreen.classList.add('active-screen');
         if (targetBtn) targetBtn.classList.add('active');
         
-        // Закрываем боковое меню при переходе по вкладкам
         const sidebar = document.getElementById('sidebar-archive');
         if (sidebar) sidebar.classList.remove('open');
     }
@@ -826,7 +855,6 @@ body.light-theme {
         
         let x = e.pageX;
         let y = e.pageY;
-        // Ограничитель, чтобы меню не уходило за край экрана
         if (x + 160 > window.innerWidth) x = window.innerWidth - 170;
         
         menu.style.left = x + 'px';
@@ -837,7 +865,8 @@ body.light-theme {
         if (!currentContextNode) return;
         const titleEl = currentContextNode.querySelector('.chat-title') || currentContextNode.querySelector('span');
         const oldName = titleEl ? titleEl.innerText : "";
-        const newName = await showCustomPrompt("Переименование", "Введите новое имя чата:");
+        
+        const newName = await showCustomPrompt("Переименование", "Введите новое имя чата:", "Новое имя...");
         
         if (newName && newName.trim() !== "") {
             if (titleEl) titleEl.innerText = newName.trim();
@@ -846,7 +875,7 @@ body.light-theme {
 
     async function cmBranch() {
         if (!currentContextNode) return;
-        await showCustomAlert("Мост Ветвления", "Ветвь от текущего чата успешно создана.");
+        await showCustomAlert("Ветвление", "Функция создания ветви чата в разработке.");
     }
 
     async function cmDelete() {
@@ -876,7 +905,7 @@ body.light-theme {
         });
     }
 
-    function showCustomPrompt(title, text) {
+    function showCustomPrompt(title, text, placeholder = "Введите текст...") {
         return new Promise((resolve) => {
             document.getElementById('custom-modal-title').innerText = title;
             document.getElementById('custom-modal-text').innerText = text;
@@ -885,6 +914,7 @@ body.light-theme {
             const inputField = document.getElementById('custom-modal-input');
             inputContainer.style.display = 'block';
             inputField.value = '';
+            inputField.placeholder = placeholder;
             
             document.getElementById('custom-modal-cancel').style.display = 'block';
             document.getElementById('custom-modal').style.display = 'flex';
@@ -1023,7 +1053,6 @@ body.light-theme {
         const screenChat = document.getElementById('screen-chat');
         
         if (msg) {
-            // Учитываем лимит запросов
             trackMessageUsage();
 
             chatFlow.innerHTML += `<div class="msg user-msg">${msg}</div>`;
@@ -1112,7 +1141,6 @@ body.light-theme {
         
         timestamps.push(now);
         
-        // Фильтруем записи старше 168 часов (7 дней)
         const weekAgo = now - (168 * 60 * 60 * 1000);
         timestamps = timestamps.filter(t => t > weekAgo);
         
@@ -1124,11 +1152,8 @@ body.light-theme {
         let now = Date.now();
         let timestamps = JSON.parse(localStorage.getItem('oracle_message_timestamps') || '[]');
         
-        // 24 часа
         const dayAgo = now - (24 * 60 * 60 * 1000);
         const count24h = timestamps.filter(t => t > dayAgo).length;
-        
-        // 168 часов
         const count168h = timestamps.length;
         
         const el24Count = document.getElementById('limit-24h-count');
@@ -1300,7 +1325,8 @@ body.light-theme {
             return true; 
         }
         
-        const password = await showCustomPrompt("Безопасность Ядра", "Введите Master Password или пароль доступа:");
+        const password = await showCustomPrompt("Безопасность Ядра", "Введите Master Password или пароль доступа:", "Введите пароль...");
+
         if (password === "🔑)&52-78") {
             sessionStorage.setItem('oracle_dev_mode', 'true');
             unlockDevItems();
@@ -1367,11 +1393,64 @@ body.light-theme {
     }
 
     function changeOracleTheme(primary, container, variant) {
-        document.documentElement.style.setProperty('--primary', primary);
-        document.documentElement.style.setProperty('--primary-container', container);
-        document.documentElement.style.setProperty('--surface-variant', variant);
-        document.documentElement.style.setProperty('--grad', `linear-gradient(90deg, ${primary} 0%, #e8bbf1 100%)`);
+        const isLight = document.body.classList.contains('light-theme');
+        
         localStorage.setItem('oracle_matte_theme', JSON.stringify({primary, container, variant}));
+
+        const target = document.body;
+
+        if (isLight) {
+            target.style.setProperty('--primary', primary);
+            target.style.setProperty('--primary-container', primary + '26');
+            target.style.setProperty('--surface-variant', '#f3f4f6');
+            target.style.setProperty('--grad', `linear-gradient(90deg, ${primary} 0%, #a855f7 100%)`);
+        } else {
+            target.style.setProperty('--primary', primary);
+            target.style.setProperty('--primary-container', container);
+            target.style.setProperty('--surface-variant', variant);
+            target.style.setProperty('--grad', `linear-gradient(90deg, ${primary} 0%, #e8bbf1 100%)`);
+        }
+    }
+
+    function toggleLightTheme() {
+        document.body.classList.toggle('light-theme');
+        const isLight = document.body.classList.contains('light-theme');
+        localStorage.setItem('oracle_light_theme', isLight);
+
+        let primary = '#bb86fc', container = '#3700b3', variant = '#1e1e1e';
+        const savedTheme = localStorage.getItem('oracle_matte_theme');
+        if (savedTheme) {
+            try {
+                const parsed = JSON.parse(savedTheme);
+                primary = parsed.primary;
+                container = parsed.container;
+                variant = parsed.variant;
+            } catch(e) {}
+        }
+
+        const target = document.body;
+
+        if (isLight) {
+            if (document.body.classList.contains('true-black-theme')) {
+                document.body.classList.remove('true-black-theme');
+                localStorage.setItem('oracle_true_black', 'false');
+            }
+            
+            target.style.setProperty('--primary', primary);
+            target.style.setProperty('--primary-container', primary + '26'); 
+            target.style.setProperty('--surface-variant', '#f3f4f6');
+            target.style.setProperty('--grad', `linear-gradient(90deg, ${primary} 0%, #a855f7 100%)`);
+        } else {
+            target.style.setProperty('--primary', primary);
+            target.style.setProperty('--primary-container', container);
+            target.style.setProperty('--surface-variant', variant);
+            target.style.setProperty('--grad', `linear-gradient(90deg, ${primary} 0%, #e8bbf1 100%)`);
+        }
+
+        const btn = document.getElementById('light-theme-toggle-btn');
+        if (btn) {
+            btn.innerText = isLight ? "ВЫКЛЮЧИТЬ" : "ВКЛЮЧИТЬ";
+        }
     }
 
     function updateUserBubbleColor(color) {
@@ -1434,15 +1513,13 @@ body.light-theme {
     }
 
     // =========================================
-    // 11. INITIALIZATION ON LOAD
+    // 11. INITIALIZATION ON LOAD & CALENDAR
     // =========================================
     window.addEventListener('DOMContentLoaded', () => {
-        // Инициализация темы True Black
         if (localStorage.getItem('oracle_true_black') === 'true') {
             document.body.classList.add('true-black-theme');
         }
         
-        // Инициализация Компактной навигации
         if (localStorage.getItem('oracle_compact_nav') === 'true') {
             document.body.classList.add('compact-nav-mode');
             const btn = document.getElementById('compact-nav-toggle-btn');
@@ -1453,7 +1530,6 @@ body.light-theme {
             }
         }
         
-        // История чата
         const savedChat = localStorage.getItem('oracle_chat_history');
         if (savedChat) {
             const chatFlow = document.getElementById('chat-flow');
@@ -1465,14 +1541,12 @@ body.light-theme {
             }
         }
 
-        // История Редактора Историй
         const savedStory = localStorage.getItem('oracle_story_active');
         if (savedStory) {
             const editor = document.getElementById('editor');
             if (editor) editor.innerHTML = savedStory;
         }
 
-        // Темы и Цвета
         const savedTheme = localStorage.getItem('oracle_matte_theme');
         if (savedTheme) {
             try {
@@ -1488,7 +1562,6 @@ body.light-theme {
             if (picker) picker.value = savedBubbleColor;
         }
 
-        // Сонный режим (Pillow Mode)
         const savedIntensity = localStorage.getItem('oracle_pillow_intensity') || 80;
         const intensitySlider = document.getElementById('pillow-intensity-slider');
         if (intensitySlider) intensitySlider.value = savedIntensity;
@@ -1505,13 +1578,10 @@ body.light-theme {
         setInterval(checkPillowSchedule, 60000); 
         checkPillowSchedule();
 
-        // DEV Режим
         if (sessionStorage.getItem('oracle_dev_mode') === 'true') unlockDevItems();
 
-        // Обновление лимитов
         updateLimitsUI();
 
-        // Обработчик нажатия клавиши Enter в поле ввода
         const userInput = document.getElementById('user-input');
         if (userInput) {
             userInput.addEventListener('keydown', function(e) {
@@ -1522,7 +1592,6 @@ body.light-theme {
             });
         }
 
-        // Скрытие помощи в редакторе при фокусе
         const editorEl = document.getElementById('editor');
         if (editorEl) {
             editorEl.addEventListener('focus', function() {
@@ -1531,20 +1600,16 @@ body.light-theme {
             }, {once: true});
         }
 
-        // Закрытие всплывающих элементов при клике снаружи
         document.addEventListener('click', (e) => {
-            // Закрытие меню выбора агентов
             const plusBtn = document.getElementById('agent-plus-btn');
             const agentMenu = document.getElementById('agent-selector-menu');
             if (agentMenu && plusBtn && !plusBtn.contains(e.target) && !agentMenu.contains(e.target)) {
                 agentMenu.style.display = 'none';
             }
             
-            // Закрытие ПКМ меню
             const ctxMenu = document.getElementById('context-menu');
             if (ctxMenu) ctxMenu.style.display = 'none';
 
-            // Закрытие бокового меню (Sidebar)
             const sidebar = document.getElementById('sidebar-archive');
             const burgerBtn = document.getElementById('burger-menu-btn');
             if (sidebar && sidebar.classList.contains('open') && !sidebar.contains(e.target) && burgerBtn && !burgerBtn.contains(e.target)) {
@@ -1552,22 +1617,137 @@ body.light-theme {
             }
         });
     });
-    function toggleLightTheme() {
-    document.body.classList.toggle('light-theme');
-    const isLight = document.body.classList.contains('light-theme');
-    localStorage.setItem('oracle_light_theme', isLight);
 
-    // Если включается светлая тема, выключаем True Black (OLED)
-    if (isLight && document.body.classList.contains('true-black-theme')) {
-        document.body.classList.remove('true-black-theme');
-        localStorage.setItem('oracle_true_black', 'false');
+    if ('serviceWorker' in navigator && 'Notification' in window) {
+        Notification.requestPermission();
+        navigator.serviceWorker.register('sw.js').then(reg => {
+            console.log('SW зарегистрирован');
+        });
+    }
+    renderCalendar();
+
+    function renderCalendar() {
+        const grid = document.getElementById('calendar-days-grid');
+        const title = document.getElementById('calendar-month-title');
+        if (!grid || !title) return;
+
+        grid.innerHTML = '';
+        const year = currentCalDate.getFullYear();
+        const month = currentCalDate.getMonth();
+
+        const monthNames = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
+        title.innerText = `${monthNames[month]} ${year}`;
+
+        const firstDay = new Date(year, month, 1).getDay();
+        const startingPoint = (firstDay === 0 ? 6 : firstDay - 1);
+        const totalDays = new Date(year, month + 1, 0).getDate();
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        for (let i = 0; i < startingPoint; i++) {
+            grid.innerHTML += `<div></div>`;
+        }
+
+        for (let day = 1; day <= totalDays; day++) {
+            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const hasReminders = reminders.some(r => r.date === dateStr);
+            
+            const cellDate = new Date(year, month, day);
+            const isPast = cellDate < today;
+            
+            const dayCell = document.createElement('div');
+            dayCell.className = 'chat-card';
+            dayCell.innerText = day;
+            
+            if (isPast) {
+                dayCell.style.cssText = `padding: 10px; text-align: center; margin: 0; position: relative; opacity: 0.3; cursor: not-allowed; border: 1px solid transparent;`;
+            } else {
+                dayCell.style.cssText = `padding: 10px; text-align: center; cursor: pointer; margin: 0; position: relative; border: ${hasReminders ? '1px solid var(--primary)' : '1px solid transparent'};`;
+                dayCell.onclick = () => openAddReminderModal(dateStr);
+            }
+
+            grid.appendChild(dayCell);
+        }
+        renderRemindersList();
     }
 
-    const btn = document.getElementById('light-theme-toggle-btn');
-    if (btn) {
-        btn.innerText = isLight ? "ВЫКЛЮЧИТЬ" : "ВКЛЮЧИТЬ";
+    function changeMonth(delta) {
+        currentCalDate.setMonth(currentCalDate.getMonth() + delta);
+        renderCalendar();
     }
-}
+
+    async function openAddReminderModal(dateStr) {
+        const title = await showCustomPrompt("Новое напоминание", `Введите заголовок на ${dateStr}:`, "Например: Созвон");
+        if (!title) return;
+        
+        const time = await showCustomPrompt("Время", "Введите время (ЧЧ:ММ):", "12:00");
+        if (!time) return;
+
+        const newReminder = { id: Date.now(), date: dateStr, time: time, title: title };
+        reminders.push(newReminder);
+        localStorage.setItem('oracle_reminders', JSON.stringify(reminders));
+        
+        if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+            navigator.serviceWorker.controller.postMessage({ type: 'SCHEDULE_REMINDER', reminder: newReminder });
+        }
+
+        renderCalendar();
+    }
+
+    function renderRemindersList() {
+        const list = document.getElementById('reminders-list');
+        if (!list) return;
+        list.innerHTML = reminders.length ? '' : '<div style="font-size: 13px; color: var(--on-surface-variant);">Напоминаний пока нет</div>';
+        
+        reminders.forEach(r => {
+            list.innerHTML += `
+                <div class="chat-card" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <div>
+                        <strong>${r.title}</strong>
+                        <div style="font-size: 12px; color: var(--on-surface-variant);">${r.date} в ${r.time}</div>
+                    </div>
+                    <button onclick="deleteReminder(${r.id})" class="icon-btn" style="color: #ff5252;"><span class="material-symbols-rounded">delete</span></button>
+                </div>
+            `;
+        });
+    }
+
+    function deleteReminder(id) {
+        reminders = reminders.filter(r => r.id !== id);
+        localStorage.setItem('oracle_reminders', JSON.stringify(reminders));
+        renderCalendar();
+    }
+
+    function handleRemindersQuery() {
+        const today = new Date();
+        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+        const todayReminders = reminders.filter(r => r.date === todayStr);
+
+        const chatContainer = document.getElementById('chat-flow');
+        if (!chatContainer) return;
+        
+        const messageEl = document.createElement('div');
+        messageEl.className = 'msg ai-msg';
+
+        if (todayReminders.length > 0) {
+            const listText = todayReminders
+                .map(r => `• <b>${r.time}</b> — ${r.title}`)
+                .join('<br>');
+                
+            messageEl.innerHTML = `Запланировано на сегодня:<br>${listText}`;
+        } else {
+            messageEl.innerHTML = `
+                <p>Напоминаний Нет</p>
+                <button class="btn-create-inline" onclick="openAddReminderModal('${todayStr}')">
+                    + Создать
+                </button>
+            `;
+        }
+
+        chatContainer.appendChild(messageEl);
+    }
 </script>
 </body>
 </html>
