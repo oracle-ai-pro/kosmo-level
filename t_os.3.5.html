@@ -102,6 +102,12 @@
         .ai-input-area input { margin: 0; background: transparent; border: none; padding: 10px; flex: 1; font-size: 14px; outline: none; color: white; }
         .ai-send { background: var(--accent); color: #000; border: none; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; }
         .ai-send:active { transform: scale(0.9); }
+#f-msg:empty:before { 
+    content: attr(data-placeholder); 
+    color: rgba(255,255,255,0.4); 
+    pointer-events: none; 
+    display: block; 
+}
     </style>
 </head>
 <body>
@@ -147,12 +153,14 @@
                 <input type="text" id="f-sub" placeholder="Тема запроса">
                 
                 <div style="display: flex; gap: 8px; margin-bottom: 10px;">
-                    <button class="format-btn" onclick="formatText('<b>', '</b>')">B</button>
-                    <button class="format-btn" onclick="formatText('<i>', '</i>')" style="font-style: italic;">I</button>
-                    <button class="format-btn" onclick="formatText('<u>', '</u>')" style="text-decoration: underline;">U</button>
-                </div>
-                
-                <textarea id="f-msg" placeholder="Текст сообщения..." rows="4"></textarea>
+    <!-- Передаем стандартные команды браузера -->
+    <button class="format-btn" onclick="formatText('bold')">B</button>
+    <button class="format-btn" onclick="formatText('italic')" style="font-style: italic;">I</button>
+    <button class="format-btn" onclick="formatText('underline')" style="text-decoration: underline;">U</button>
+</div>
+
+<!-- Замена textarea на редактируемый div -->
+<div id="f-msg" contenteditable="true" data-placeholder="Текст сообщения..." style="width: 100%; background: var(--input); border: 1px solid rgba(255,255,255,0.05); padding: 16px; border-radius: 15px; color: var(--text); margin-bottom: 12px; font-size: 14px; min-height: 120px; overflow-y: auto; outline: none; transition: 0.3s;"></div>
                 <button class="btn" onclick="sendToSheet()" id="send-btn">ОТПРАВИТЬ ДАННЫЕ</button>
                 <button class="btn btn-ghost" onclick="openModule('view-hub')">ОТМЕНА</button>
             </div>
@@ -256,21 +264,25 @@
         };
 
         function register() {
-            const name = document.getElementById('u-name').value;
-            const email = document.getElementById('u-email').value;
-            const pin = document.getElementById('u-pin').value;
-            
-            if (name && email && pin) {
-                localStorage.setItem('titan-name', name);
-                localStorage.setItem('titan-email', email);
-                localStorage.setItem('titan-pin', pin);
-                location.reload(); 
-            } else {
-                showToast("Заполни все поля!");
-            }
-        }
+    const name = document.getElementById('u-name').value;
+    const email = document.getElementById('u-email').value;
+    const pin = document.getElementById('u-pin').value;
+    
+    if (name && email && pin) {
+        localStorage.setItem('titan-name', name);
+        localStorage.setItem('titan-email', email);
+        localStorage.setItem('titan-pin', pin);
+        softReload(); // Бесшовная загрузка
+    } else {
+        showToast("Заполни все поля!");
+    }
+}
 
-        function logout() { localStorage.clear(); location.reload(); }
+function logout() { 
+    localStorage.clear(); 
+    softReload(); // Бесшовный сброс сессии
+}
+
 
         function openModule(moduleId) {
             document.querySelectorAll('#main-app .module').forEach(m => m.classList.remove('active'));
@@ -284,50 +296,48 @@
             setTimeout(() => toast.classList.remove('active'), 3000);
         }
 
-        function formatText(openTag, closeTag) {
-            const textarea = document.getElementById('f-msg');
-            const start = textarea.selectionStart;
-            const end = textarea.selectionEnd;
-            const text = textarea.value;
-            
-            textarea.value = text.substring(0, start) + openTag + text.substring(start, end) + closeTag + text.substring(end);
-            textarea.focus();
-            textarea.selectionEnd = end + openTag.length + closeTag.length;
-        }
+        function formatText(command) {
+    document.execCommand(command, false, null);
+    document.getElementById('f-msg').focus();
+}
 
         function sendToSheet() {
-            const sub = document.getElementById('f-sub').value;
-            const msg = document.getElementById('f-msg').value;
-            const btn = document.getElementById('send-btn');
-            
-            if (!sub || !msg) { showToast("Пустой запрос недопустим"); return; }
-            
-            btn.innerHTML = `<span class="material-symbols-outlined" style="animation: spin 1s linear infinite;">sync</span> ОТПРАВКА...`;
-            btn.style.pointerEvents = "none";
+    const sub = document.getElementById('f-sub').value;
+    // Берем HTML-содержимое из нового div
+    const msg = document.getElementById('f-msg').innerHTML;
+    const btn = document.getElementById('send-btn');
+    
+    // Проверяем, есть ли реальный текст, игнорируя пустые теги
+    const plainText = document.getElementById('f-msg').innerText.trim();
+    if (!sub || !plainText) { showToast("Пустой запрос недопустим"); return; }
+    
+    btn.innerHTML = `<span class="material-symbols-outlined" style="animation: spin 1s linear infinite;">sync</span> ОТПРАВКА...`;
+    btn.style.pointerEvents = "none";
 
-            const data = {
-                email: localStorage.getItem('titan-email'),
-                pin: localStorage.getItem('titan-pin'),
-                subject: sub,
-                message: msg
-            };
+    const data = {
+        email: localStorage.getItem('titan-email'),
+        pin: localStorage.getItem('titan-pin'),
+        subject: sub,
+        message: msg
+    };
 
-            fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(data) })
-            .then(() => {
-                showToast("ЗАПРОС ОТПРАВЛЕН! 🔑)");
-                setTimeout(() => {
-                    document.getElementById('f-sub').value = "";
-                    document.getElementById('f-msg').value = "";
-                    openModule('view-hub');
-                    btn.innerHTML = `ОТПРАВИТЬ ДАННЫЕ`;
-                    btn.style.pointerEvents = "auto";
-                }, 1000);
-            }).catch(() => {
-                showToast("ОШИБКА СЕТИ");
-                btn.innerHTML = `ОТПРАВИТЬ ДАННЫЕ`;
-                btn.style.pointerEvents = "auto";
-            });
-        }
+    fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(data) })
+    .then(() => {
+        showToast("ЗАПРОС ОТПРАВЛЕН! 🔑)");
+        setTimeout(() => {
+            document.getElementById('f-sub').value = "";
+            // Очищаем содержимое div
+            document.getElementById('f-msg').innerHTML = "";
+            openModule('view-hub');
+            btn.innerHTML = `ОТПРАВИТЬ ДАННЫЕ`;
+            btn.style.pointerEvents = "auto";
+        }, 1000);
+    }).catch(() => {
+        showToast("ОШИБКА СЕТИ");
+        btn.innerHTML = `ОТПРАВИТЬ ДАННЫЕ`;
+        btn.style.pointerEvents = "auto";
+    });
+}
 
         function loadInbox() {
             const list = document.getElementById('inbox-list');
@@ -402,6 +412,44 @@
             document.getElementById('ai-header-title').innerText = finalName.toUpperCase();
             showToast("ИМЯ АГЕНТА: " + finalName);
         }
+function softReload() {
+    // Сброс полей ввода
+    if (document.getElementById('u-name')) document.getElementById('u-name').value = '';
+    if (document.getElementById('u-email')) document.getElementById('u-email').value = '';
+    if (document.getElementById('u-pin')) document.getElementById('u-pin').value = '';
+    
+    // Скрытие основного интерфейса
+    document.querySelectorAll('.module').forEach(m => m.classList.remove('active'));
+    document.getElementById('main-app').classList.add('hidden');
+    document.getElementById('auth-screen').classList.remove('hidden');
+    
+    // Повторный запуск логики авторизации
+    const name = localStorage.getItem('titan-name');
+    if (name) {
+        document.getElementById('login-module').classList.remove('active');
+        document.getElementById('greeting-module').classList.add('active');
+        
+        const welcome = document.getElementById('welcome-text');
+        welcome.innerText = `${greetings[Math.floor(Math.random() * greetings.length)]}\n${name}`;
+        document.getElementById('op-name').innerText = name + (isAdmin(localStorage.getItem('titan-email')) ? " [ADMIN]" : "");
+        
+        const hubWarning = document.getElementById('hub-warning');
+        if (hubWarning) hubWarning.style.display = 'block';
+
+        welcome.style.opacity = "1";
+        setTimeout(() => {
+            welcome.style.opacity = "0";
+            setTimeout(() => {
+                document.getElementById('auth-screen').classList.add('hidden');
+                document.getElementById('main-app').classList.remove('hidden');
+                openModule('view-hub');
+            }, 500);
+        }, 1200);
+    } else {
+        document.getElementById('greeting-module').classList.remove('active');
+        document.getElementById('login-module').classList.add('active');
+    }
+}
     </script>
 </body>
 </html>
